@@ -73,7 +73,7 @@ func (fs *gcsHandler) Filelist(r *sftp.Request) (sftp.ListerAt, error) {
 			Prefix:    prefix,
 		})
 
-		list := []os.FileInfo{}
+		var list []os.FileInfo
 
 		for {
 			objAttrs, err := objects.Next()

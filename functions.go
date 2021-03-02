@@ -27,7 +27,7 @@ func processPublicKeyAuth(config *ssh.ServerConfig) {
 		log.Fatalf("Failed to load authorized keys file: %s", err)
 	}
 
-	authorizedKeysArray := []ssh.PublicKey{}
+	var authorizedKeysArray []ssh.PublicKey
 	for {
 		out, _, _, rest, err := ssh.ParseAuthorizedKey(authorizedKeysBytes)
 		if err != nil {

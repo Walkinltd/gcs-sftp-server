@@ -22,5 +22,5 @@ func GoogleCloudStorageHandler(ctx context.Context, bucketName string, opts ...o
 		bucket: bucket,
 	}
 
-	return &sftp.Handlers{handler, handler, handler, handler}, nil
+	return &sftp.Handlers{FileGet: handler, FilePut: handler, FileCmd: handler, FileList: handler}, nil
 }

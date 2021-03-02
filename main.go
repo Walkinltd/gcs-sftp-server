@@ -14,7 +14,7 @@ import (
 	"golang.org/x/crypto/ssh"
 	"google.golang.org/api/option"
 
-	gsftp "github.com/a1comms/gcs-sftp-server/handler"
+	gsftp "github.com/walkinltd/gcs-sftp-server/handler"
 )
 
 var (
@@ -101,7 +101,10 @@ func HandleConn(nConn net.Conn, config *ssh.ServerConfig) {
 		// protocol intended. In the case of an SFTP session, this is "subsystem"
 		// with a payload string of "<length=4>sftp"
 		if newChannel.ChannelType() != "session" {
-			newChannel.Reject(ssh.UnknownChannelType, "unknown channel type")
+			err := newChannel.Reject(ssh.UnknownChannelType, "unknown channel type")
+			if err != nil {
+				log.Printf("error occurred on channel rejection: %s", err)
+			}
 			continue
 		}
 		channel, requests, err := newChannel.Accept()
@@ -122,13 +125,19 @@ func HandleConn(nConn net.Conn, config *ssh.ServerConfig) {
 						ok = true
 					}
 				}
-				req.Reply(ok, nil)
+
+				if req.WantReply {
+					err := req.Reply(ok, nil)
+					if err != nil {
+						log.Printf("sftp error on reply: %s", err)
+					}
+				}
 			}
 		}(requests)
 
 		ctx := context.Background()
 
-		opts := []option.ClientOption{}
+		var opts []option.ClientOption
 		if GCS_CREDENTIALS_FILE != "" {
 			opts = append(opts, option.WithCredentialsFile(GCS_CREDENTIALS_FILE))
 		}
@@ -140,7 +149,10 @@ func HandleConn(nConn net.Conn, config *ssh.ServerConfig) {
 
 		server := sftp.NewRequestServer(channel, *root)
 		if err := server.Serve(); err == io.EOF {
-			server.Close()
+			err = server.Close()
+			if err != nil {
+				log.Printf("sftp client errored on close: %s", err)
+			}
 
 			log.Printf("sftp client exited session.")
 		} else if err != nil {
